@@ -1,0 +1,29 @@
+---
+ - name: Tomcat Playbook Header
+   hosts: localhost
+   become: true
+   vars:
+      tomcat_version: 9
+      dev_heap_size: 256m
+      prod_heap_size: 512m
+   tasks:
+    - name: Ensure Tomcat is installed Install Tomcat if it's not already Installed
+      apt:
+       name: tomcat{{ tomcat_version }}
+       state: present
+       
+    - name: configure JVM Heap size for booth DEV and PROD enviroenment
+      lineinfile:
+       dest: /etc/default/tomcat{{ tomcat_version }}
+       regexp: '^(\s*export CATALINA_OPTS=.*-Xmx).*'
+       line: '\1{{ dev_heap_size if env == "DEV" else prod_heap_size }}'
+       
+    - name: deploy the application with the artifcat war
+      copy:
+       src: sample.war
+       dest: "/var/lib/tomcat{{ tomcat_version }}/webapps/"
+
+    - name: Redémarrer le service Tomcat
+      service:
+        name: tomcat{{ tomcat_version }}
+        state: restarted
